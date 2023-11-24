@@ -14,22 +14,39 @@
       </ion-header>
 
       <div>
-        <h1>{{ year }}</h1>
+        <div>
+          <button @click="updateYear(-1)">prev</button>
+          <h2>{{ year }}</h2>
+          <button @click="updateYear(1)">next</button>
+        </div>
         <div>
           <button @click="updateMonth(-1)">prev</button>
           <h2>{{ monthName }}</h2>
           <button @click="updateMonth(1)">next</button>
         </div>
+        <div class="calender">
+          <ul class="day-names">
+            <li v-for="day in dayNames">
+              {{ day }}
+            </li>
+          </ul>
+          <ul class="dates">
+            <li :class="{ current: n.month === 'curr', selected: n.month === 'selected'}" v-for="n in updateDatelist">
+              {{ n.date }}
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="calender">
+
+      <div>
         <ul class="day-names">
           <li v-for="day in dayNames">
             {{ day }}
           </li>
         </ul>
         <ul class="dates">
-          <li v-for="n in datelist">
-            {{ n }}
+          <li v-for="n in updateWeekList">
+            {{ n.date }}
           </li>
         </ul>
       </div>
@@ -71,10 +88,29 @@ const monthNames = [
   "December",
 ];
 
-const year = ref(new Date().getFullYear());
-const month = ref(new Date().getMonth());
+const time = ref(new Date())
+const year = ref(time.value.getFullYear());
+const month = ref(time.value.getMonth());
 const monthName = computed(() => {
   return monthNames[month.value];
+});
+const selectedTime = ref(new Date())
+const selectedDate = ref(selectedTime.value.getDate());
+const selectedDay = ref(selectedTime.value.getDay());
+const selectedMonth = ref(selectedTime.value.getMonth());
+const selectedYear = ref(selectedTime.value.getFullYear());
+
+let weekList: any[] = [];
+const updateWeekList = computed(() => {
+  weekList = [];
+  const firstDateOfWeek = selectedDate.value - selectedDay.value;
+  updateDatelist.value.forEach((item) => {
+    if (item.date >= firstDateOfWeek && item.date < firstDateOfWeek + 7) {
+      weekList.push(item);
+    }
+  });
+
+  return weekList;
 });
 
 const lastDateOfMonth = computed(() => {
@@ -99,22 +135,38 @@ const updateDatelist = computed(() => {
   let nextmonthdate = 0;
   for (let i = 0; i < firstDayOfMonth.value; i++) {
     let prevdate = lastDateOfLastMonth.value - firstDayOfMonth.value + i + 1;
-    datelist.push(prevdate);
+    datelist.push({ date: prevdate, month: "prev" });
   }
   for (let i = 1; i <= lastDateOfMonth.value; i++) {
-    datelist.push(i);
+    if(i === selectedDate.value && selectedMonth.value === month.value && selectedYear.value === year.value){
+      datelist.push({ date: i, month: "selected" });
+    }else{
+      datelist.push({ date: i, month: "curr" });
+    }
   }
   for (let i = lastDayOfMonth.value + 1; i < 7; i++) {
     nextmonthdate++;
-    datelist.push(nextmonthdate);
+    datelist.push({ date: nextmonthdate, month: "next" });
   }
+
   return datelist;
 });
 
 function updateMonth(num: number) {
-  if (month.value) {
+  month.value = month.value + num
+  if (month.value === -1) {
+    updateYear(-1)
+    month.value = 11
+  }else if(month.value === 12){
+    updateYear(1)
+    month.value = 0
   }
-  month.value = month.value + num;
+  // const value = (month.value + num) % 12;
+  // month.value = value >= 0 ? value : 12 + value;
+}
+function updateYear(num: number) {
+  const value = year.value + num;
+  year.value = Math.min(Math.max(value, 1923), 2123)
 }
 </script>
 
@@ -125,6 +177,8 @@ function updateMonth(num: number) {
 }
 .day-names li {
   width: calc(100% / 7);
+  list-style-type: none;
+  text-align: center;
 }
 
 .dates {
@@ -133,5 +187,14 @@ function updateMonth(num: number) {
 }
 .dates li {
   width: calc(100% / 7);
+  list-style-type: none;
+  text-align: center;
+}
+.current{
+  color: blue;
+}
+.selected{
+
+  color: red;
 }
 </style>
